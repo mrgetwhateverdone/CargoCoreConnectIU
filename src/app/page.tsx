@@ -1,65 +1,173 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useState } from "react"
+import { Search } from "lucide-react"
+import { Topbar } from "@/components/layout/topbar"
+import { KpiRow } from "@/components/dashboard/kpi-row"
+import { SectionHeader } from "@/components/dashboard/section-header"
+import { ActionCard } from "@/components/dashboard/action-card"
+import { IntelligenceCard } from "@/components/dashboard/intelligence-card"
+import { MissedValuePanel } from "@/components/dashboard/missed-value-panel"
+import { WormholePanel } from "@/components/review/wormhole-panel"
+import type { Action } from "@/lib/types"
+import {
+  kpiMetrics,
+  actNowActions,
+  intelligenceItems,
+  myWorkActions,
+  missedValueTotal,
+  missedValueByFunction,
+  personalDashboard,
+} from "@/lib/data"
+
+/**
+ * This part of the code defines the filter tabs available in the "My Work
+ * Today" centre column. Each tab filters the work queue by action status.
+ */
+const WORK_TABS = ["All", "My", "Urgent", "Completed", "Deferred"] as const
+
+/**
+ * This part of the code renders the "My Work Today" page — the default
+ * landing page of the app. It is composed of four major sections:
+ *
+ * 1. A KPI summary row at the top.
+ * 2. A "Where to Act Right Now" section with high-priority action cards.
+ * 3. A three-column grid: Intelligence Feed (left), My Work queue (centre),
+ *    and Missed Value + Personal Dashboard (right).
+ * 4. A Wormhole slide-over panel that opens when "Open wormhole" is clicked.
+ */
+export default function MyWorkTodayPage() {
+  const [activeTab, setActiveTab] = useState<string>("All")
+  const [wormholeAction, setWormholeAction] = useState<Action | null>(null)
+
+  /**
+   * This part of the code filters the work queue based on the active tab.
+   * "All" shows everything, "Urgent" shows critical/at-risk items,
+   * and the other tabs filter by matching status.
+   */
+  const filteredActions = myWorkActions.filter((action) => {
+    if (activeTab === "All") return true
+    if (activeTab === "My") return true
+    if (activeTab === "Urgent")
+      return action.riskLevel === "critical" || action.riskLevel === "at_risk"
+    if (activeTab === "Completed") return action.status === "completed"
+    if (activeTab === "Deferred") return action.status === "deferred"
+    return true
+  })
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <>
+      <Topbar title="Execution Intelligence System" subtitle="DecisionOS" />
+
+      <div className="space-y-6 p-6">
+        {/* This part of the code renders the KPI summary row. */}
+        <KpiRow metrics={kpiMetrics} />
+
+        {/* This part of the code renders the "Where to Act Right Now" section
+            with high-value action cards that have the green left border. */}
+        {actNowActions.length > 0 && (
+          <div className="space-y-3">
+            <SectionHeader
+              title="Where to Act Right Now"
+              rightLabel="Save the most value fastest"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            {actNowActions.map((action) => (
+              <ActionCard
+                key={action.id}
+                action={action}
+                variant="act-now"
+                onOpenWormhole={() => setWormholeAction(action)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* This part of the code renders the three-column grid that forms
+            the main body of the page: intelligence feed, work queue, and
+            missed value panel. */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* This part of the code renders the Intelligence Feed column. */}
+          <div className="space-y-4">
+            <SectionHeader
+              title="Intelligence Feed"
+              rightLabel="Approve moves item into Actions"
+            />
+            {intelligenceItems.length > 0 ? (
+              intelligenceItems.map((item) => (
+                <IntelligenceCard key={item.id} item={item} />
+              ))
+            ) : (
+              <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+                No intelligence items
+              </div>
+            )}
+          </div>
+
+          {/* This part of the code renders the My Work Today centre column
+              with a search input, filter tabs, and the filtered action list. */}
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search actions, owners, or functions"
+                className="h-9 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+                aria-label="Search work items"
+              />
+            </div>
+
+            {/* This part of the code renders the filter tabs row. */}
+            <div className="flex gap-1">
+              {WORK_TABS.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                    activeTab === tab
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <SectionHeader title="My Work Today" rightLabel="Click an action to inspect inline" />
+              {filteredActions.length > 0 ? (
+                filteredActions.map((action) => (
+                  <ActionCard
+                    key={action.id}
+                    action={action}
+                    variant="work-queue"
+                    onOpenWormhole={() => setWormholeAction(action)}
+                  />
+                ))
+              ) : (
+                <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+                  No work items
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* This part of the code renders the Missed Value and Personal
+              Dashboard in the right column. */}
+          <MissedValuePanel
+            totalMissed={missedValueTotal}
+            byFunction={missedValueByFunction}
+            personalDashboard={personalDashboard}
+          />
         </div>
-      </main>
-    </div>
-  );
+      </div>
+
+      {/* This part of the code renders the Wormhole slide-over panel. */}
+      <WormholePanel
+        action={wormholeAction}
+        isOpen={wormholeAction !== null}
+        onClose={() => setWormholeAction(null)}
+      />
+    </>
+  )
 }
