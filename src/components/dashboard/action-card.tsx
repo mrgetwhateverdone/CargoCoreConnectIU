@@ -1,9 +1,8 @@
-import { formatCurrency, formatHours } from "@/lib/utils"
+import { cn, formatCurrency, formatHours } from "@/lib/utils"
 import type { Action } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { PriorityBadge } from "@/components/dashboard/priority-badge"
 import { StatusBadge } from "@/components/dashboard/status-badge"
-import { Progress } from "@/components/ui/progress"
 
 interface ActionCardProps {
   action: Action
@@ -121,18 +120,20 @@ export function ActionCard({ action, variant, onOpenWormhole, onSimulate }: Acti
       </div>
 
       {/* This part of the code renders a progress bar at the bottom of the
-          work-queue card. The bar colour reflects the action's risk level. */}
-      <div className="mt-3">
-        <Progress
-          value={action.progressPercent}
-          className="h-1.5"
-          aria-label={`${action.progressPercent}% complete`}
+          work-queue card. The bar colour reflects the action's risk level
+          using a simple div with a width percentage and a background class. */}
+      <div
+        className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuenow={action.progressPercent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${action.progressPercent}% complete`}
+      >
+        <div
+          className={cn("h-full rounded-full transition-all", progressColor)}
+          style={{ width: `${action.progressPercent}%` }}
         />
-        <style>{`
-          [aria-label="${action.progressPercent}% complete"] [data-slot="progress-indicator"] {
-            background-color: ${action.riskLevel === "critical" ? "oklch(0.637 0.237 25.331)" : action.riskLevel === "at_risk" ? "oklch(0.769 0.188 70.08)" : "oklch(0.696 0.17 162.48)"};
-          }
-        `}</style>
       </div>
     </div>
   )
